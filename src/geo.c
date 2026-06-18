@@ -111,7 +111,16 @@ bool geo_processar_arquivo(const char* caminho_arquivo, const char* caminho_svg,
     FILE* file = fopen(caminho_arquivo, "r");
     if (file == NULL) return false;
 
+    char caminho_corpo_temporario[1024];
+    bool remover_corpo_temporario = false;
     FILE* corpo_svg = tmpfile();
+
+    if (corpo_svg == NULL) {
+        snprintf(caminho_corpo_temporario, sizeof(caminho_corpo_temporario), "%s.tmp", caminho_svg);
+        corpo_svg = fopen(caminho_corpo_temporario, "w+");
+        remover_corpo_temporario = corpo_svg != NULL;
+    }
+
     if (corpo_svg == NULL) {
         fclose(file);
         return false;
@@ -155,9 +164,15 @@ bool geo_processar_arquivo(const char* caminho_arquivo, const char* caminho_svg,
     fclose(file);
     if (!svg_escrever_arquivo_final(caminho_svg, corpo_svg, &bounds)) {
         fclose(corpo_svg);
+        if (remover_corpo_temporario) {
+            remove(caminho_corpo_temporario);
+        }
         return false;
     }
 
     fclose(corpo_svg);
+    if (remover_corpo_temporario) {
+        remove(caminho_corpo_temporario);
+    }
     return true;
 }
