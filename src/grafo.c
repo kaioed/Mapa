@@ -268,6 +268,54 @@ bool grafo_obter_vertice(Grafo g, const char* id, double* x, double* y) {
     return true;
 }
 
+bool grafo_obter_vertice_por_indice(Grafo g, int indice, const char** id, double* x, double* y) {
+    if (g == NULL || indice < 0 || indice >= g->num_vertices) {
+        return false;
+    }
+
+    if (id != NULL) {
+        *id = g->vertices[indice].id;
+    }
+    if (x != NULL) {
+        *x = g->vertices[indice].x;
+    }
+    if (y != NULL) {
+        *y = g->vertices[indice].y;
+    }
+
+    return true;
+}
+
+const char* grafo_vertice_mais_proximo(Grafo g, double x, double y, double* distancia) {
+    if (distancia != NULL) {
+        *distancia = DBL_MAX;
+    }
+
+    if (g == NULL || g->num_vertices == 0) {
+        return NULL;
+    }
+
+    int melhor = -1;
+    double melhor_distancia = DBL_MAX;
+
+    for (int i = 0; i < g->num_vertices; i++) {
+        double dx = g->vertices[i].x - x;
+        double dy = g->vertices[i].y - y;
+        double distancia_quadrada = (dx * dx) + (dy * dy);
+
+        if (distancia_quadrada < melhor_distancia) {
+            melhor_distancia = distancia_quadrada;
+            melhor = i;
+        }
+    }
+
+    if (distancia != NULL) {
+        *distancia = melhor_distancia;
+    }
+
+    return melhor >= 0 ? g->vertices[melhor].id : NULL;
+}
+
 static Aresta* buscar_aresta_por_indices(Grafo g, int origem, int destino) {
     if (g == NULL || origem < 0 || origem >= g->num_vertices) {
         return NULL;

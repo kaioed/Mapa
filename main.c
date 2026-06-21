@@ -1,6 +1,7 @@
 #include "geo.h"
 #include "grafo.h"
 #include "hash_extensivel.h"
+#include "qry.h"
 #include "via.h"
 
 #include <errno.h>
@@ -153,7 +154,7 @@ static bool escrever_relatorio(const char* caminho_txt, const char* caminho_geo,
 
     if (caminho_qry != NULL) {
         fprintf(txt, "Arquivo QRY: %s\n", caminho_qry);
-        fprintf(txt, "Consultas .qry ainda nao processadas nesta etapa.\n");
+        fprintf(txt, "Consultas .qry processadas abaixo.\n");
     } else {
         fprintf(txt, "Arquivo QRY: nao informado.\n");
     }
@@ -206,18 +207,19 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    hash_destruir(hash_quadras);
-    remove(caminho_hash);
-
     if (arquivo_via != NULL) {
         if (!juntar_caminho(dir_entrada, arquivo_via, caminho_via, sizeof(caminho_via))) {
             fprintf(stderr, "Erro ao montar caminho do arquivo .via.\n");
+            hash_destruir(hash_quadras);
+            remove(caminho_hash);
             return 1;
         }
 
         grafo = via_ler_arquivo(caminho_via);
         if (grafo == NULL) {
             fprintf(stderr, "Erro ao processar arquivo .via: %s\n", caminho_via);
+            hash_destruir(hash_quadras);
+            remove(caminho_hash);
             return 1;
         }
     }
@@ -227,6 +229,8 @@ int main(int argc, char** argv) {
         if (!juntar_caminho(dir_entrada, arquivo_qry, caminho_qry, sizeof(caminho_qry))) {
             fprintf(stderr, "Erro ao montar caminho do arquivo .qry.\n");
             grafo_destruir(grafo);
+            hash_destruir(hash_quadras);
+            remove(caminho_hash);
             return 1;
         }
         caminho_qry_relatorio = caminho_qry;
@@ -236,9 +240,23 @@ int main(int argc, char** argv) {
                             caminho_qry_relatorio, grafo)) {
         fprintf(stderr, "Erro ao escrever arquivo .txt: %s\n", caminho_txt);
         grafo_destruir(grafo);
+        hash_destruir(hash_quadras);
+        remove(caminho_hash);
         return 1;
     }
 
+    if (arquivo_qry != NULL) {
+        if (!qry_processar_arquivo(caminho_qry, caminho_svg, caminho_txt, hash_quadras, grafo)) {
+            fprintf(stderr, "Erro ao processar arquivo .qry: %s\n", caminho_qry);
+            grafo_destruir(grafo);
+            hash_destruir(hash_quadras);
+            remove(caminho_hash);
+            return 1;
+        }
+    }
+
     grafo_destruir(grafo);
+    hash_destruir(hash_quadras);
+    remove(caminho_hash);
     return 0;
 }

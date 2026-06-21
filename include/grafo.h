@@ -23,6 +23,8 @@ int grafo_quantidade_arestas(Grafo g);
 int grafo_buscar_vertice(Grafo g, const char* id);
 
 bool grafo_obter_vertice(Grafo g, const char* id, double* x, double* y);
+bool grafo_obter_vertice_por_indice(Grafo g, int indice, const char** id, double* x, double* y);
+const char* grafo_vertice_mais_proximo(Grafo g, double x, double y, double* distancia);
 bool grafo_obter_aresta(Grafo g, const char* id_origem, const char* id_destino,
                         const char** nome, const char** cep_dir, const char** cep_esq,
                         double* comp, double* vm, bool* habilitada);
