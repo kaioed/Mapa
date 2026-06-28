@@ -11,8 +11,8 @@ OBJ_DIR  = ../obj
 TEST_DIR = ../test
 
 # Arquivos fonte
-MAIN_SRC    = $(ROOT_DIR)/main.c
-MODULES_SRC = $(wildcard *.c)
+MAIN_SRC    = main.c
+MODULES_SRC = $(filter-out main.c,$(wildcard *.c))
 MODULES_OBJ = $(patsubst %.c, $(OBJ_DIR)/%.o, $(MODULES_SRC))
 MAIN_OBJ    = $(OBJ_DIR)/main.o
 
@@ -29,7 +29,9 @@ TEST_QUADRA_EXEC = $(OBJ_DIR)/test_quadra$(EXE_EXT)
 TEST_GEO_EXEC    = $(OBJ_DIR)/test_geo$(EXE_EXT)
 TEST_GRAFO_EXEC  = $(OBJ_DIR)/test_grafo$(EXE_EXT)
 TEST_VIA_EXEC    = $(OBJ_DIR)/test_via$(EXE_EXT)
-TEST_EXECS       = $(TEST_HASH_EXEC) $(TEST_QUADRA_EXEC) $(TEST_GEO_EXEC) $(TEST_GRAFO_EXEC) $(TEST_VIA_EXEC)
+TEST_QRY_EXEC    = $(OBJ_DIR)/test_qry$(EXE_EXT)
+TEST_QRY_SVG_EXEC = $(OBJ_DIR)/test_qry_svg$(EXE_EXT)
+TEST_EXECS       = $(TEST_HASH_EXEC) $(TEST_QUADRA_EXEC) $(TEST_GEO_EXEC) $(TEST_GRAFO_EXEC) $(TEST_VIA_EXEC) $(TEST_QRY_EXEC) $(TEST_QRY_SVG_EXEC)
 
 # --- REGRAS DE COMPILAÇÃO PRINCIPAIS ---
 all: $(OBJ_DIR) $(EXEC)
@@ -41,7 +43,7 @@ $(EXEC): $(MODULES_OBJ) $(MAIN_OBJ)
 $(OBJ_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Compila o main.c que está na raiz
+# Compila o main.c
 $(MAIN_OBJ): $(MAIN_SRC)
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -67,6 +69,8 @@ test: $(TEST_EXECS)
 	$(TEST_GEO_EXEC)
 	$(TEST_GRAFO_EXEC)
 	$(TEST_VIA_EXEC)
+	$(TEST_QRY_EXEC)
+	$(TEST_QRY_SVG_EXEC)
 
 $(TEST_HASH_EXEC): $(TEST_DIR)/testeHash.c $(OBJ_DIR)/hash_extensivel.o $(UNITY_OBJ) | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -o $@ $^
@@ -83,4 +87,10 @@ $(TEST_GRAFO_EXEC): $(TEST_DIR)/testeGrafo.c $(OBJ_DIR)/grafo.o $(UNITY_OBJ) | $
 $(TEST_VIA_EXEC): $(TEST_DIR)/testeVia.c $(OBJ_DIR)/via.o $(OBJ_DIR)/grafo.o $(UNITY_OBJ) | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -o $@ $^
 
-.PHONY: all clean clean_tests teste test test_hash test_quadra test_geo test_via test_arg test_casa test_pm test_qry
+$(TEST_QRY_EXEC): $(TEST_DIR)/testeQry.c $(OBJ_DIR)/qry.o $(OBJ_DIR)/qry_svg.o $(OBJ_DIR)/quadra.o $(OBJ_DIR)/hash_extensivel.o $(OBJ_DIR)/grafo.o $(UNITY_OBJ) | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(TEST_QRY_SVG_EXEC): $(TEST_DIR)/testeQry_svg.c $(OBJ_DIR)/qry_svg.o $(OBJ_DIR)/grafo.o $(UNITY_OBJ) | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -o $@ $^
+
+.PHONY: all clean clean_tests teste test test_hash test_quadra test_geo test_via test_qry test_qry_svg
