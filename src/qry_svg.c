@@ -1,4 +1,5 @@
 #include "../include/qry_svg.h"
+#include "../include/carro_base64.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -146,14 +147,20 @@ void qry_svg_caminho(FILE* svg, Grafo grafo, const char* id, const char** caminh
     qry_svg_escrever_xml(svg, cor);
     fputs("\" stroke-width=\"4\" stroke-opacity=\"0.90\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\n", svg);
     
-    fprintf(svg, "  <circle r=\"5\" fill=\"");
-    qry_svg_escrever_xml(svg, cor);
-    
-    fputs("\">\n"
-          "    <animateMotion dur=\"6s\" repeatCount=\"indefinite\">\n"
-          "      <mpath xlink:href=\"#", svg);
+    /* Marcador animado: um carrinho (sprite pixel art) percorrendo o caminho,
+     * no lugar da antiga bolinha. O tamanho do sprite eh proporcional ao
+     * tamanho original da imagem (CARRO_LARGURA_PX x CARRO_ALTURA_PX). */
+    const double carro_largura = 26.0;
+    const double carro_altura = carro_largura * ((double)CARRO_ALTURA_PX / (double)CARRO_LARGURA_PX);
+
+    fprintf(svg,
+        "  <image x=\"%.2lf\" y=\"%.2lf\" width=\"%.2lf\" height=\"%.2lf\" "
+        "href=\"data:image/png;base64,%s\">\n"
+        "    <animateMotion dur=\"6s\" repeatCount=\"indefinite\" rotate=\"auto\">\n"
+        "      <mpath xlink:href=\"#",
+        -carro_largura / 2.0, -carro_altura / 2.0, carro_largura, carro_altura, CARRO_IMG_BASE64);
     qry_svg_escrever_xml(svg, id);
     fputs("\" />\n"
           "    </animateMotion>\n"
-          "  </circle>\n", svg);
+          "  </image>\n", svg);
 }
