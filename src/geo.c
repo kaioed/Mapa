@@ -89,7 +89,7 @@ static bool svg_escrever_arquivo_final(const char* caminho_svg, FILE* corpo_svg,
         if (viewbox_h <= 0.0) viewbox_h = 100.0;
     }
 
-    fprintf(svg, "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100%%\" height=\"100%%\" viewBox=\"%.2lf %.2lf %.2lf %.2lf\">\n",
+    fprintf(svg, "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"100%%\" height=\"100%%\" viewBox=\"%.2lf %.2lf %.2lf %.2lf\">\n",
             viewbox_x, viewbox_y, viewbox_w, viewbox_h);
 
     rewind(corpo_svg);

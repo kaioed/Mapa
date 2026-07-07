@@ -609,62 +609,8 @@ int grafo_dijkstra(Grafo g, const char* id_origem, const char* id_destino,
     return tamanho_caminho;
 }
 
-typedef struct {
-    int indice_atual;
-    int topo;
-    int quantidade_componentes;
-    double velocidade_minima;
-    int* indices;
-    int* menor_alcancavel;
-    int* pilha;
-    bool* na_pilha;
-    int* componentes;
-} TarjanContexto;
-
 static bool aresta_valida_para_componentes(Aresta* aresta, double velocidade_minima) {
     return aresta->habilitada && aresta->vm >= velocidade_minima;
-}
-
-static void tarjan_visitar(Grafo g, int vertice, TarjanContexto* ctx) {
-    ctx->indices[vertice] = ctx->indice_atual;
-    ctx->menor_alcancavel[vertice] = ctx->indice_atual;
-    ctx->indice_atual++;
-    ctx->pilha[ctx->topo] = vertice;
-    ctx->topo++;
-    ctx->na_pilha[vertice] = true;
-
-    for (Aresta* aresta = g->vertices[vertice].adj; aresta != NULL; aresta = aresta->prox) {
-        int destino = aresta->destino;
-
-        if (!aresta_valida_para_componentes(aresta, ctx->velocidade_minima)) {
-            continue;
-        }
-
-        if (ctx->indices[destino] == -1) {
-            tarjan_visitar(g, destino, ctx);
-            if (ctx->menor_alcancavel[destino] < ctx->menor_alcancavel[vertice]) {
-                ctx->menor_alcancavel[vertice] = ctx->menor_alcancavel[destino];
-            }
-        } else if (ctx->na_pilha[destino] &&
-                   ctx->indices[destino] < ctx->menor_alcancavel[vertice]) {
-            ctx->menor_alcancavel[vertice] = ctx->indices[destino];
-        }
-    }
-
-    if (ctx->menor_alcancavel[vertice] == ctx->indices[vertice]) {
-        while (ctx->topo > 0) {
-            int v = ctx->pilha[ctx->topo - 1];
-            ctx->topo--;
-            ctx->na_pilha[v] = false;
-            ctx->componentes[v] = ctx->quantidade_componentes;
-
-            if (v == vertice) {
-                break;
-            }
-        }
-
-        ctx->quantidade_componentes++;
-    }
 }
 
 int grafo_componentes_fortemente_conexos(Grafo g, double velocidade_minima,
@@ -678,43 +624,59 @@ int grafo_componentes_fortemente_conexos(Grafo g, double velocidade_minima,
         return 0;
     }
 
-    TarjanContexto ctx;
-    ctx.indice_atual = 0;
-    ctx.topo = 0;
-    ctx.quantidade_componentes = 0;
-    ctx.velocidade_minima = velocidade_minima;
-    ctx.indices = (int*)malloc((size_t)n * sizeof(int));
-    ctx.menor_alcancavel = (int*)malloc((size_t)n * sizeof(int));
-    ctx.pilha = (int*)malloc((size_t)n * sizeof(int));
-    ctx.na_pilha = (bool*)calloc((size_t)n, sizeof(bool));
-    ctx.componentes = componentes;
+    int* pilha = (int*)malloc((size_t)n * sizeof(int));
 
-    if (ctx.indices == NULL || ctx.menor_alcancavel == NULL ||
-        ctx.pilha == NULL || ctx.na_pilha == NULL) {
-        free(ctx.indices);
-        free(ctx.menor_alcancavel);
-        free(ctx.pilha);
-        free(ctx.na_pilha);
+    if (pilha == NULL) {
         return -1;
     }
 
     for (int i = 0; i < n; i++) {
-        ctx.indices[i] = -1;
-        ctx.menor_alcancavel[i] = -1;
         componentes[i] = -1;
     }
 
+    int quantidade_componentes = 0;
+
     for (int i = 0; i < n; i++) {
-        if (ctx.indices[i] == -1) {
-            tarjan_visitar(g, i, &ctx);
+        if (componentes[i] != -1) {
+            continue;
         }
+
+        int topo = 0;
+        componentes[i] = quantidade_componentes;
+        pilha[topo] = i;
+        topo++;
+
+        while (topo > 0) {
+            topo--;
+            int atual = pilha[topo];
+
+            for (int j = 0; j < g->num_arestas; j++) {
+                Aresta* aresta = g->arestas[j];
+                int vizinho = -1;
+
+                if (!aresta_valida_para_componentes(aresta, velocidade_minima)) {
+                    continue;
+                }
+
+                if (aresta->origem == atual) {
+                    vizinho = aresta->destino;
+                } else if (aresta->destino == atual) {
+                    vizinho = aresta->origem;
+                }
+
+                if (vizinho >= 0 && componentes[vizinho] == -1) {
+                    componentes[vizinho] = quantidade_componentes;
+                    pilha[topo] = vizinho;
+                    topo++;
+                }
+            }
+        }
+
+        quantidade_componentes++;
     }
 
-    free(ctx.indices);
-    free(ctx.menor_alcancavel);
-    free(ctx.pilha);
-    free(ctx.na_pilha);
-    return ctx.quantidade_componentes;
+    free(pilha);
+    return quantidade_componentes;
 }
 
 typedef struct {
