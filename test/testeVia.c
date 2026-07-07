@@ -78,10 +78,30 @@ static void test_via_retorna_nulo_para_arquivo_inexistente(void) {
     TEST_ASSERT_NULL(via_ler_arquivo("../obj/nao_existe.via"));
 }
 
+static void test_via_arquivo_vazio(void) {
+    FILE* f = fopen(ARQUIVO_VIA_TESTE, "w");
+    fclose(f);
+
+    TEST_ASSERT_NULL(
+        via_ler_arquivo(ARQUIVO_VIA_TESTE)
+    );
+}
+
+static void test_via_processar_nulo(void) {
+    TEST_ASSERT_FALSE(
+        via_processar_arquivo(
+            ARQUIVO_VIA_TESTE,
+            NULL
+        )
+    );
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_via_ler_arquivo_popula_grafo);
     RUN_TEST(test_via_processar_arquivo_em_grafo_existente);
     RUN_TEST(test_via_retorna_nulo_para_arquivo_inexistente);
+    RUN_TEST(test_via_arquivo_vazio);
+    RUN_TEST(test_via_processar_nulo);
     return UNITY_END();
 }

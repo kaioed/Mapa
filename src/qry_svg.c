@@ -149,7 +149,6 @@ void qry_svg_caminho(FILE* svg, Grafo grafo, const char* id, const char** caminh
     fprintf(svg, "  <circle r=\"5\" fill=\"");
     qry_svg_escrever_xml(svg, cor);
     
-    // CORREÇÃO: Utilizando xlink:href conforme exigido na documentação
     fputs("\">\n"
           "    <animateMotion dur=\"6s\" repeatCount=\"indefinite\">\n"
           "      <mpath xlink:href=\"#", svg);

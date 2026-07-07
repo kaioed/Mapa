@@ -14,7 +14,7 @@
 
 typedef struct {
     bool ativo;
-    char nome[8];
+    char nome[16];
     char cep[TAMANHO_CHAVE];
     char face;
     int numero;
@@ -136,8 +136,10 @@ static void processar_regs(QryContexto* ctx, const char* linha) {
         int c = componentes[i];
         double x, y;
         if (c < 0 || c >= qtd_componentes || !grafo_obter_vertice_por_indice(ctx->grafo, i, NULL, &x, &y)) continue;
-        if (x < min_x[c]) min_x[c] = x;  if (y < min_y[c]) min_y[c] = y;
-        if (x > max_x[c]) max_x[c] = x;  if (y > max_y[c]) max_y[c] = y;
+        if (x < min_x[c]) min_x[c] = x;
+        if (y < min_y[c]) min_y[c] = y;
+        if (x > max_x[c]) max_x[c] = x;
+        if (y > max_y[c]) max_y[c] = y;
         contagem[c]++;
     }
 
@@ -180,7 +182,8 @@ static void processar_exp(QryContexto* ctx, const char* linha) {
 
 static const char* direcao(double x1, double y1, double x2, double y2) {
     double dx = x2 - x1, dy = y2 - y1;
-    if (dx < 0.0) dx = -dx;  if (dy < 0.0) dy = -dy;
+    if (dx < 0.0) dx = -dx;
+    if (dy < 0.0) dy = -dy;
     if (dx >= dy) return x2 >= x1 ? "leste" : "oeste";
     return y2 >= y1 ? "sul" : "norte";
 }

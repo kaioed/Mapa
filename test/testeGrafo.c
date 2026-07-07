@@ -91,7 +91,7 @@ static void test_grafo_desabilitar_aresta_afeta_caminho(void) {
     grafo_destruir(grafo);
 }
 
-static void test_grafo_componentes_fortes_respeitam_velocidade_minima(void) {
+static void test_grafo_componentes_respeitam_velocidade_minima(void) {
     int componentes[4];
     Grafo grafo = criar_grafo_base();
 
@@ -106,6 +106,22 @@ static void test_grafo_componentes_fortes_respeitam_velocidade_minima(void) {
     TEST_ASSERT_NOT_EQUAL(componentes[1], componentes[2]);
 
     TEST_ASSERT_EQUAL_INT(2, grafo_componentes_fortemente_conexos(grafo, 1.0,
+                                                                  componentes, 4));
+    TEST_ASSERT_EQUAL_INT(componentes[0], componentes[1]);
+    TEST_ASSERT_EQUAL_INT(componentes[1], componentes[2]);
+    TEST_ASSERT_NOT_EQUAL(componentes[2], componentes[3]);
+
+    grafo_destruir(grafo);
+}
+
+static void test_grafo_componentes_tratam_mao_unica_como_conexao(void) {
+    int componentes[4];
+    Grafo grafo = criar_grafo_base();
+
+    grafo_inserir_aresta(grafo, "A", "B", "Rua_AB", "-", "-", 10.0, 5.0);
+    grafo_inserir_aresta(grafo, "B", "C", "Rua_BC", "-", "-", 10.0, 5.0);
+
+    TEST_ASSERT_EQUAL_INT(2, grafo_componentes_fortemente_conexos(grafo, 3.0,
                                                                   componentes, 4));
     TEST_ASSERT_EQUAL_INT(componentes[0], componentes[1]);
     TEST_ASSERT_EQUAL_INT(componentes[1], componentes[2]);
@@ -141,12 +157,86 @@ static void test_grafo_agm_enxerga_grafo_como_nao_direcionado(void) {
     grafo_destruir(grafo);
 }
 
+static void test_grafo_busca_vertice_inexistente(void) {
+    Grafo g = criar_grafo_base();
+
+    TEST_ASSERT_EQUAL_INT(-1,
+        grafo_buscar_vertice(g, "X"));
+
+    grafo_destruir(g);
+}
+
+static void test_grafo_vertice_mais_proximo(void) {
+    double dist;
+
+    Grafo g = criar_grafo_base();
+
+    const char* id =
+        grafo_vertice_mais_proximo(
+            g,
+            9.0,
+            0.0,
+            &dist
+        );
+
+    TEST_ASSERT_EQUAL_STRING("B", id);
+
+    grafo_destruir(g);
+}
+
+static void test_grafo_atualizar_velocidade_aresta(void) {
+    const char* nome;
+    double vm;
+
+    Grafo g = criar_grafo_base();
+
+    grafo_inserir_aresta(
+        g,
+        "A",
+        "B",
+        "Rua",
+        "-",
+        "-",
+        10,
+        5
+    );
+
+    TEST_ASSERT_TRUE(
+        grafo_atualizar_velocidade_aresta(
+            g,
+            "A",
+            "B",
+            20
+        )
+    );
+
+    grafo_obter_aresta(
+        g,
+        "A",
+        "B",
+        &nome,
+        NULL,
+        NULL,
+        NULL,
+        &vm,
+        NULL
+    );
+
+    TEST_ASSERT_EQUAL_FLOAT(20, vm);
+
+    grafo_destruir(g);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_grafo_insere_vertices_e_arestas);
     RUN_TEST(test_grafo_dijkstra_usa_comprimento_ou_tempo);
     RUN_TEST(test_grafo_desabilitar_aresta_afeta_caminho);
-    RUN_TEST(test_grafo_componentes_fortes_respeitam_velocidade_minima);
+    RUN_TEST(test_grafo_componentes_respeitam_velocidade_minima);
+    RUN_TEST(test_grafo_componentes_tratam_mao_unica_como_conexao);
+    RUN_TEST(test_grafo_busca_vertice_inexistente);
+    RUN_TEST(test_grafo_vertice_mais_proximo);
+    RUN_TEST(test_grafo_atualizar_velocidade_aresta);
     RUN_TEST(test_grafo_agm_enxerga_grafo_como_nao_direcionado);
     return UNITY_END();
 }

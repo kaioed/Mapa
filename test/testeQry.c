@@ -1,73 +1,215 @@
-#include "Unity/src/unity.h"
-#include "../include/qry.h"
-#include "../include/qry_svg.h"
-#include "../include/hash_extensivel.h"
-#include "../include/grafo.h"
+#include "unity.h"
+#include "qry.h"
+#include "hash_extensivel.h"
+#include "grafo.h"
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+
+#define ARQUIVO_QRY_TESTE "../obj/test_qry.qry"
+#define ARQUIVO_SVG_TESTE "../obj/test_qry.svg"
+#define ARQUIVO_TXT_TESTE "../obj/test_qry.txt"
+#define ARQUIVO_HASH_TESTE "../obj/test_qry_hash.dat"
+
+static void limpar_arquivos(void) {
+    remove(ARQUIVO_QRY_TESTE);
+    remove(ARQUIVO_SVG_TESTE);
+    remove(ARQUIVO_TXT_TESTE);
+    remove(ARQUIVO_HASH_TESTE);
+}
 
 void setUp(void) {
-
+    limpar_arquivos();
 }
 
 void tearDown(void) {
-    
+    limpar_arquivos();
 }
 
+static bool escrever_arquivo(const char* caminho, const char* conteudo) {
+    FILE* arquivo = fopen(caminho, "w");
 
-void test_qry_processar_arquivo_inexistente(void) {
-    HashExtensivel* hash = hash_criar(4);
-    Grafo g = grafo_criar();
-    
-    bool resultado = qry_processar_arquivo("caminho_falso.qry", "saida.svg", "saida.txt", hash, g);
-    
-    TEST_ASSERT_FALSE_MESSAGE(resultado, "A função deveria retornar false para ficheiros QRY inexistentes.");
-    
-    hash_destruir(hash);
-    grafo_destruir(g);
+    if (arquivo == NULL) {
+        return false;
+    }
+
+    fputs(conteudo, arquivo);
+    fclose(arquivo);
+    return true;
 }
 
-void test_qry_processamento_comandos_isolados(void) {
-    const char* arq_qry = "teste_isolado.qry";
-    const char* arq_svg = "teste_isolado.svg";
-    const char* arq_txt = "teste_isolado.txt";
+static bool escrever_svg_base(void) {
+    return escrever_arquivo(ARQUIVO_SVG_TESTE,
+                            "<svg xmlns=\"http://www.w3.org/2000/svg\" "
+                            "xmlns:xlink=\"http://www.w3.org/1999/xlink\" "
+                            "viewBox=\"0 0 200 200\">\n</svg>\n");
+}
 
-    FILE* f_qry = fopen(arq_qry, "w");
-    TEST_ASSERT_NOT_NULL(f_qry);
-    
-    fprintf(f_qry, "mvm 10.0 0.0 0.0 100.0 100.0\n");
-    fprintf(f_qry, "exp 15.0\n");
-    fclose(f_qry);
+static bool arquivo_contem(const char* caminho, const char* trecho) {
+    FILE* arquivo = fopen(caminho, "r");
+    char buffer[256];
 
-    FILE* f_svg = fopen(arq_svg, "w");
-    TEST_ASSERT_NOT_NULL(f_svg);
-    fprintf(f_svg, "<svg viewBox=\"0 0 500 500\">\n</svg>\n");
-    fclose(f_svg);
+    if (arquivo == NULL) {
+        return false;
+    }
 
-    HashExtensivel* hash = hash_criar(4);
-    Grafo g = grafo_criar();
+    while (fgets(buffer, sizeof(buffer), arquivo) != NULL) {
+        if (strstr(buffer, trecho) != NULL) {
+            fclose(arquivo);
+            return true;
+        }
+    }
 
-    bool resultado = qry_processar_arquivo(arq_qry, arq_svg, arq_txt, hash, g);
-    
-    TEST_ASSERT_TRUE_MESSAGE(resultado, "A leitura de comandos válidos no QRY não deveria falhar.");
+    fclose(arquivo);
+    return false;
+}
 
-  
+static HashExtensivel* criar_hash_teste(void) {
+    return hash_criar(1, ARQUIVO_HASH_TESTE);
+}
+
+static Grafo criar_grafo_teste(void) {
+    Grafo grafo = grafo_criar(2);
+
+    if (grafo != NULL) {
+        grafo_inserir_vertice(grafo, "A", 0.0, 0.0);
+        grafo_inserir_vertice(grafo, "B", 10.0, 0.0);
+        grafo_inserir_aresta(grafo, "A", "B", "Rua_AB", "-", "-", 10.0, 5.0);
+    }
+
+    return grafo;
+}
+
+static void test_qry_processar_arquivo_inexistente(void) {
+    HashExtensivel* hash = criar_hash_teste();
+    Grafo grafo = grafo_criar(1);
+
+    TEST_ASSERT_NOT_NULL(hash);
+    TEST_ASSERT_NOT_NULL(grafo);
+    TEST_ASSERT_FALSE(qry_processar_arquivo("../obj/nao_existe.qry",
+                                            ARQUIVO_SVG_TESTE,
+                                            ARQUIVO_TXT_TESTE,
+                                            hash,
+                                            grafo));
+
+    grafo_destruir(grafo);
     hash_destruir(hash);
-    grafo_destruir(g);
-    
+}
 
-    remove(arq_qry);
-    remove(arq_svg);
-    remove(arq_txt);
+static void test_qry_arquivo_vazio(void) {
+    HashExtensivel* hash = criar_hash_teste();
+    Grafo grafo = grafo_criar(1);
+
+    TEST_ASSERT_NOT_NULL(hash);
+    TEST_ASSERT_NOT_NULL(grafo);
+    TEST_ASSERT_TRUE(escrever_arquivo(ARQUIVO_QRY_TESTE, ""));
+    TEST_ASSERT_TRUE(escrever_svg_base());
+    TEST_ASSERT_TRUE(qry_processar_arquivo(ARQUIVO_QRY_TESTE,
+                                           ARQUIVO_SVG_TESTE,
+                                           ARQUIVO_TXT_TESTE,
+                                           hash,
+                                           grafo));
+    TEST_ASSERT_TRUE(arquivo_contem(ARQUIVO_TXT_TESTE, "Arquivo QRY:"));
+
+    grafo_destruir(grafo);
+    hash_destruir(hash);
+}
+
+static void test_qry_apenas_comentarios(void) {
+    HashExtensivel* hash = criar_hash_teste();
+    Grafo grafo = grafo_criar(1);
+
+    TEST_ASSERT_NOT_NULL(hash);
+    TEST_ASSERT_NOT_NULL(grafo);
+    TEST_ASSERT_TRUE(escrever_arquivo(ARQUIVO_QRY_TESTE,
+                                      "# comentario\n"
+                                      "   # outro comentario\n"
+                                      "\n"));
+    TEST_ASSERT_TRUE(escrever_svg_base());
+    TEST_ASSERT_TRUE(qry_processar_arquivo(ARQUIVO_QRY_TESTE,
+                                           ARQUIVO_SVG_TESTE,
+                                           ARQUIVO_TXT_TESTE,
+                                           hash,
+                                           grafo));
+    TEST_ASSERT_FALSE(arquivo_contem(ARQUIVO_TXT_TESTE, "Comando QRY desconhecido"));
+
+    grafo_destruir(grafo);
+    hash_destruir(hash);
+}
+
+static void test_qry_comando_desconhecido(void) {
+    HashExtensivel* hash = criar_hash_teste();
+    Grafo grafo = grafo_criar(1);
+
+    TEST_ASSERT_NOT_NULL(hash);
+    TEST_ASSERT_NOT_NULL(grafo);
+    TEST_ASSERT_TRUE(escrever_arquivo(ARQUIVO_QRY_TESTE, "xyz 10 20\n"));
+    TEST_ASSERT_TRUE(escrever_svg_base());
+    TEST_ASSERT_TRUE(qry_processar_arquivo(ARQUIVO_QRY_TESTE,
+                                           ARQUIVO_SVG_TESTE,
+                                           ARQUIVO_TXT_TESTE,
+                                           hash,
+                                           grafo));
+    TEST_ASSERT_TRUE(arquivo_contem(ARQUIVO_TXT_TESTE, "Comando QRY desconhecido: xyz"));
+
+    grafo_destruir(grafo);
+    hash_destruir(hash);
+}
+
+static void test_qry_processa_mvm_e_exp(void) {
+    double vm = 0.0;
+    HashExtensivel* hash = criar_hash_teste();
+    Grafo grafo = criar_grafo_teste();
+
+    TEST_ASSERT_NOT_NULL(hash);
+    TEST_ASSERT_NOT_NULL(grafo);
+    TEST_ASSERT_TRUE(escrever_arquivo(ARQUIVO_QRY_TESTE,
+                                      "mvm 10.0 -1.0 -1.0 30.0 30.0\n"
+                                      "exp 15.0\n"));
+    TEST_ASSERT_TRUE(escrever_svg_base());
+    TEST_ASSERT_TRUE(qry_processar_arquivo(ARQUIVO_QRY_TESTE,
+                                           ARQUIVO_SVG_TESTE,
+                                           ARQUIVO_TXT_TESTE,
+                                           hash,
+                                           grafo));
+    TEST_ASSERT_TRUE(grafo_obter_aresta(grafo, "A", "B", NULL, NULL, NULL, NULL, &vm, NULL));
+    TEST_ASSERT_DOUBLE_WITHIN(0.0001, 15.0, vm);
+    TEST_ASSERT_TRUE(arquivo_contem(ARQUIVO_TXT_TESTE, "mvm 10.00"));
+    TEST_ASSERT_TRUE(arquivo_contem(ARQUIVO_TXT_TESTE, "exp 15.00: 1"));
+
+    grafo_destruir(grafo);
+    hash_destruir(hash);
+}
+
+static void test_qry_processa_origem_endereco(void) {
+    HashExtensivel* hash = criar_hash_teste();
+    Grafo grafo = grafo_criar(1);
+
+    TEST_ASSERT_NOT_NULL(hash);
+    TEST_ASSERT_NOT_NULL(grafo);
+    TEST_ASSERT_TRUE(hash_inserir(hash, "A1", "10;20;100;40;gray;black;1"));
+    TEST_ASSERT_TRUE(escrever_arquivo(ARQUIVO_QRY_TESTE, "@o? R0 A1 S 15\n"));
+    TEST_ASSERT_TRUE(escrever_svg_base());
+    TEST_ASSERT_TRUE(qry_processar_arquivo(ARQUIVO_QRY_TESTE,
+                                           ARQUIVO_SVG_TESTE,
+                                           ARQUIVO_TXT_TESTE,
+                                           hash,
+                                           grafo));
+    TEST_ASSERT_TRUE(arquivo_contem(ARQUIVO_TXT_TESTE, "@o? R0 A1/S/15: x=25.00 y=20.00"));
+    TEST_ASSERT_TRUE(arquivo_contem(ARQUIVO_SVG_TESTE, "R0</text>"));
+
+    grafo_destruir(grafo);
+    hash_destruir(hash);
 }
 
 int main(void) {
     UNITY_BEGIN();
-    
     RUN_TEST(test_qry_processar_arquivo_inexistente);
-    RUN_TEST(test_qry_processamento_comandos_isolados);
-    
+    RUN_TEST(test_qry_arquivo_vazio);
+    RUN_TEST(test_qry_apenas_comentarios);
+    RUN_TEST(test_qry_comando_desconhecido);
+    RUN_TEST(test_qry_processa_mvm_e_exp);
+    RUN_TEST(test_qry_processa_origem_endereco);
     return UNITY_END();
 }
