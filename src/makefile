@@ -16,8 +16,8 @@ MODULES_SRC = $(filter-out main.c,$(wildcard *.c))
 MODULES_OBJ = $(patsubst %.c, $(OBJ_DIR)/%.o, $(MODULES_SRC))
 MAIN_OBJ    = $(OBJ_DIR)/main.o
 
-# O executável será gerado na pasta raiz do projeto
-EXEC = $(ROOT_DIR)/ted
+# O executável será gerado na pasta atual (src)
+EXEC = ted
 
 # Configurações do Unity
 UNITY_SRC = $(TEST_DIR)/Unity/src/unity.c
@@ -40,15 +40,17 @@ $(EXEC): $(MODULES_OBJ) $(MAIN_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Compila os módulos que estão na mesma pasta (src)
-$(OBJ_DIR)/%.o: %.c
+# O "| $(OBJ_DIR)" garante que a pasta obj exista antes de compilar,
+# não importa qual alvo (make, make test, etc.) seja chamado primeiro.
+$(OBJ_DIR)/%.o: %.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Compila o main.c
-$(MAIN_OBJ): $(MAIN_SRC)
+$(MAIN_OBJ): $(MAIN_SRC) | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Compila o framework de testes
-$(UNITY_OBJ): $(UNITY_SRC)
+$(UNITY_OBJ): $(UNITY_SRC) | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR):
