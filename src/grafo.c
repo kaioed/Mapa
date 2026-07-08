@@ -51,43 +51,45 @@ static int max_int(int a, int b) {
 }
 
 static bool garantir_capacidade_vertices(Grafo g) {
-    if (g->num_vertices < g->capacidade_vertices) {
+    struct grafo* gr = (struct grafo*)g;
+    if (gr->num_vertices < gr->capacidade_vertices) {
         return true;
     }
 
-    int nova_capacidade = max_int(g->capacidade_vertices * 2, 1);
-    Vertice* novos_vertices = (Vertice*)realloc(g->vertices, (size_t)nova_capacidade * sizeof(Vertice));
+    int nova_capacidade = max_int(gr->capacidade_vertices * 2, 1);
+    Vertice* novos_vertices = (Vertice*)realloc(gr->vertices, (size_t)nova_capacidade * sizeof(Vertice));
 
     if (novos_vertices == NULL) {
         return false;
     }
 
-    for (int i = g->capacidade_vertices; i < nova_capacidade; i++) {
+    for (int i = gr->capacidade_vertices; i < nova_capacidade; i++) {
         novos_vertices[i].id = NULL;
         novos_vertices[i].x = 0.0;
         novos_vertices[i].y = 0.0;
         novos_vertices[i].adj = NULL;
     }
 
-    g->vertices = novos_vertices;
-    g->capacidade_vertices = nova_capacidade;
+    gr->vertices = novos_vertices;
+    gr->capacidade_vertices = nova_capacidade;
     return true;
 }
 
 static bool garantir_capacidade_arestas(Grafo g) {
-    if (g->num_arestas < g->capacidade_arestas) {
+    struct grafo* gr = (struct grafo*)g;
+    if (gr->num_arestas < gr->capacidade_arestas) {
         return true;
     }
 
-    int nova_capacidade = max_int(g->capacidade_arestas * 2, 4);
-    Aresta** novas_arestas = (Aresta**)realloc(g->arestas, (size_t)nova_capacidade * sizeof(Aresta*));
+    int nova_capacidade = max_int(gr->capacidade_arestas * 2, 4);
+    Aresta** novas_arestas = (Aresta**)realloc(gr->arestas, (size_t)nova_capacidade * sizeof(Aresta*));
 
     if (novas_arestas == NULL) {
         return false;
     }
 
-    g->arestas = novas_arestas;
-    g->capacidade_arestas = nova_capacidade;
+    gr->arestas = novas_arestas;
+    gr->capacidade_arestas = nova_capacidade;
     return true;
 }
 
@@ -134,54 +136,56 @@ static void destruir_aresta(Aresta* aresta) {
 }
 
 Grafo grafo_criar(int num_vertices) {
-    Grafo g = (Grafo)malloc(sizeof(struct grafo));
+    struct grafo* gr = (struct grafo*)malloc(sizeof(struct grafo));
 
-    if (g == NULL) {
+    if (gr == NULL) {
         return NULL;
     }
 
-    g->capacidade_vertices = max_int(num_vertices, 1);
-    g->num_vertices = 0;
-    g->capacidade_arestas = max_int(num_vertices * 2, 4);
-    g->num_arestas = 0;
-    g->vertices = (Vertice*)calloc((size_t)g->capacidade_vertices, sizeof(Vertice));
-    g->arestas = (Aresta**)malloc((size_t)g->capacidade_arestas * sizeof(Aresta*));
+    gr->capacidade_vertices = max_int(num_vertices, 1);
+    gr->num_vertices = 0;
+    gr->capacidade_arestas = max_int(num_vertices * 2, 4);
+    gr->num_arestas = 0;
+    gr->vertices = (Vertice*)calloc((size_t)gr->capacidade_vertices, sizeof(Vertice));
+    gr->arestas = (Aresta**)malloc((size_t)gr->capacidade_arestas * sizeof(Aresta*));
 
-    if (g->vertices == NULL || g->arestas == NULL) {
-        free(g->vertices);
-        free(g->arestas);
-        free(g);
+    if (gr->vertices == NULL || gr->arestas == NULL) {
+        free(gr->vertices);
+        free(gr->arestas);
+        free(gr);
         return NULL;
     }
 
-    return g;
+    return (Grafo)gr;
 }
 
 void grafo_destruir(Grafo g) {
     if (g == NULL) {
         return;
     }
+    struct grafo* gr = (struct grafo*)g;
 
-    for (int i = 0; i < g->num_arestas; i++) {
-        destruir_aresta(g->arestas[i]);
+    for (int i = 0; i < gr->num_arestas; i++) {
+        destruir_aresta(gr->arestas[i]);
     }
 
-    for (int i = 0; i < g->num_vertices; i++) {
-        free(g->vertices[i].id);
+    for (int i = 0; i < gr->num_vertices; i++) {
+        free(gr->vertices[i].id);
     }
 
-    free(g->arestas);
-    free(g->vertices);
-    free(g);
+    free(gr->arestas);
+    free(gr->vertices);
+    free(gr);
 }
 
 int grafo_buscar_vertice(Grafo g, const char* id) {
     if (g == NULL || id == NULL) {
         return -1;
     }
+    struct grafo* gr = (struct grafo*)g;
 
-    for (int i = 0; i < g->num_vertices; i++) {
-        if (strcmp(g->vertices[i].id, id) == 0) {
+    for (int i = 0; i < gr->num_vertices; i++) {
+        if (strcmp(gr->vertices[i].id, id) == 0) {
             return i;
         }
     }
@@ -193,11 +197,12 @@ void grafo_inserir_vertice(Grafo g, const char* id, double x, double y) {
     if (g == NULL || id == NULL || id[0] == '\0') {
         return;
     }
+    struct grafo* gr = (struct grafo*)g;
 
     int existente = grafo_buscar_vertice(g, id);
     if (existente >= 0) {
-        g->vertices[existente].x = x;
-        g->vertices[existente].y = y;
+        gr->vertices[existente].x = x;
+        gr->vertices[existente].y = y;
         return;
     }
 
@@ -210,11 +215,11 @@ void grafo_inserir_vertice(Grafo g, const char* id, double x, double y) {
         return;
     }
 
-    g->vertices[g->num_vertices].id = copia_id;
-    g->vertices[g->num_vertices].x = x;
-    g->vertices[g->num_vertices].y = y;
-    g->vertices[g->num_vertices].adj = NULL;
-    g->num_vertices++;
+    gr->vertices[gr->num_vertices].id = copia_id;
+    gr->vertices[gr->num_vertices].x = x;
+    gr->vertices[gr->num_vertices].y = y;
+    gr->vertices[gr->num_vertices].adj = NULL;
+    gr->num_vertices++;
 }
 
 void grafo_inserir_aresta(Grafo g, const char* id_origem, const char* id_destino,
@@ -223,6 +228,7 @@ void grafo_inserir_aresta(Grafo g, const char* id_origem, const char* id_destino
     if (g == NULL || id_origem == NULL || id_destino == NULL || comp < 0.0) {
         return;
     }
+    struct grafo* gr = (struct grafo*)g;
 
     int origem = grafo_buscar_vertice(g, id_origem);
     int destino = grafo_buscar_vertice(g, id_destino);
@@ -231,27 +237,33 @@ void grafo_inserir_aresta(Grafo g, const char* id_origem, const char* id_destino
         return;
     }
 
-    Aresta* aresta = criar_aresta(origem, destino, g->num_arestas, nome, cep_dir, cep_esq, comp, vm);
+    Aresta* aresta = criar_aresta(origem, destino, gr->num_arestas, nome, cep_dir, cep_esq, comp, vm);
 
     if (aresta == NULL) {
         return;
     }
 
-    aresta->prox = g->vertices[origem].adj;
-    g->vertices[origem].adj = aresta;
-    g->arestas[g->num_arestas] = aresta;
-    g->num_arestas++;
+    aresta->prox = gr->vertices[origem].adj;
+    gr->vertices[origem].adj = aresta;
+    gr->arestas[gr->num_arestas] = aresta;
+    gr->num_arestas++;
 }
 
 int grafo_quantidade_vertices(Grafo g) {
-    return g != NULL ? g->num_vertices : 0;
+    if (g == NULL) return 0;
+    struct grafo* gr = (struct grafo*)g;
+    return gr->num_vertices;
 }
 
 int grafo_quantidade_arestas(Grafo g) {
-    return g != NULL ? g->num_arestas : 0;
+    if (g == NULL) return 0;
+    struct grafo* gr = (struct grafo*)g;
+    return gr->num_arestas;
 }
 
 bool grafo_obter_vertice(Grafo g, const char* id, double* x, double* y) {
+    if (g == NULL) return false;
+    struct grafo* gr = (struct grafo*)g;
     int indice = grafo_buscar_vertice(g, id);
 
     if (indice < 0) {
@@ -259,28 +271,30 @@ bool grafo_obter_vertice(Grafo g, const char* id, double* x, double* y) {
     }
 
     if (x != NULL) {
-        *x = g->vertices[indice].x;
+        *x = gr->vertices[indice].x;
     }
     if (y != NULL) {
-        *y = g->vertices[indice].y;
+        *y = gr->vertices[indice].y;
     }
 
     return true;
 }
 
 bool grafo_obter_vertice_por_indice(Grafo g, int indice, const char** id, double* x, double* y) {
-    if (g == NULL || indice < 0 || indice >= g->num_vertices) {
+    if (g == NULL) return false;
+    struct grafo* gr = (struct grafo*)g;
+    if (indice < 0 || indice >= gr->num_vertices) {
         return false;
     }
 
     if (id != NULL) {
-        *id = g->vertices[indice].id;
+        *id = gr->vertices[indice].id;
     }
     if (x != NULL) {
-        *x = g->vertices[indice].x;
+        *x = gr->vertices[indice].x;
     }
     if (y != NULL) {
-        *y = g->vertices[indice].y;
+        *y = gr->vertices[indice].y;
     }
 
     return true;
@@ -291,16 +305,21 @@ const char* grafo_vertice_mais_proximo(Grafo g, double x, double y, double* dist
         *distancia = DBL_MAX;
     }
 
-    if (g == NULL || g->num_vertices == 0) {
+    if (g == NULL) {
+        return NULL;
+    }
+    struct grafo* gr = (struct grafo*)g;
+    
+    if (gr->num_vertices == 0) {
         return NULL;
     }
 
     int melhor = -1;
     double melhor_distancia = DBL_MAX;
 
-    for (int i = 0; i < g->num_vertices; i++) {
-        double dx = g->vertices[i].x - x;
-        double dy = g->vertices[i].y - y;
+    for (int i = 0; i < gr->num_vertices; i++) {
+        double dx = gr->vertices[i].x - x;
+        double dy = gr->vertices[i].y - y;
         double distancia_quadrada = (dx * dx) + (dy * dy);
 
         if (distancia_quadrada < melhor_distancia) {
@@ -313,15 +332,20 @@ const char* grafo_vertice_mais_proximo(Grafo g, double x, double y, double* dist
         *distancia = melhor_distancia;
     }
 
-    return melhor >= 0 ? g->vertices[melhor].id : NULL;
+    return melhor >= 0 ? gr->vertices[melhor].id : NULL;
 }
 
 static Aresta* buscar_aresta_por_indices(Grafo g, int origem, int destino) {
-    if (g == NULL || origem < 0 || origem >= g->num_vertices) {
+    if (g == NULL) {
+        return NULL;
+    }
+    struct grafo* gr = (struct grafo*)g;
+    
+    if (origem < 0 || origem >= gr->num_vertices) {
         return NULL;
     }
 
-    for (Aresta* aresta = g->vertices[origem].adj; aresta != NULL; aresta = aresta->prox) {
+    for (Aresta* aresta = gr->vertices[origem].adj; aresta != NULL; aresta = aresta->prox) {
         if (aresta->destino == destino) {
             return aresta;
         }
@@ -334,11 +358,13 @@ static void preencher_dados_aresta(Grafo g, Aresta* aresta, const char** id_orig
                                    const char** id_destino, const char** nome,
                                    const char** cep_dir, const char** cep_esq,
                                    double* comp, double* vm, bool* habilitada) {
+    struct grafo* gr = (struct grafo*)g;
+    
     if (id_origem != NULL) {
-        *id_origem = g->vertices[aresta->origem].id;
+        *id_origem = gr->vertices[aresta->origem].id;
     }
     if (id_destino != NULL) {
-        *id_destino = g->vertices[aresta->destino].id;
+        *id_destino = gr->vertices[aresta->destino].id;
     }
     if (nome != NULL) {
         *nome = aresta->nome;
@@ -384,17 +410,21 @@ bool grafo_obter_aresta_por_indice(Grafo g, int indice, const char** id_origem,
                                    const char** id_destino, const char** nome,
                                    const char** cep_dir, const char** cep_esq,
                                    double* comp, double* vm, bool* habilitada) {
-    if (g == NULL || indice < 0 || indice >= g->num_arestas) {
+    if (g == NULL) return false;
+    struct grafo* gr = (struct grafo*)g;
+
+    if (indice < 0 || indice >= gr->num_arestas) {
         return false;
     }
 
-    preencher_dados_aresta(g, g->arestas[indice], id_origem, id_destino, nome, cep_dir,
+    preencher_dados_aresta(g, gr->arestas[indice], id_origem, id_destino, nome, cep_dir,
                            cep_esq, comp, vm, habilitada);
     return true;
 }
 
 static int alterar_habilitacao_aresta(Grafo g, const char* id_origem, const char* id_destino,
                                       bool habilitada) {
+    struct grafo* gr = (struct grafo*)g;
     int origem = grafo_buscar_vertice(g, id_origem);
     int destino = grafo_buscar_vertice(g, id_destino);
     int alteradas = 0;
@@ -403,7 +433,7 @@ static int alterar_habilitacao_aresta(Grafo g, const char* id_origem, const char
         return 0;
     }
 
-    for (Aresta* aresta = g->vertices[origem].adj; aresta != NULL; aresta = aresta->prox) {
+    for (Aresta* aresta = gr->vertices[origem].adj; aresta != NULL; aresta = aresta->prox) {
         if (aresta->destino == destino) {
             aresta->habilitada = habilitada;
             alteradas++;
@@ -433,6 +463,7 @@ bool grafo_aresta_habilitada(Grafo g, const char* id_origem, const char* id_dest
 
 bool grafo_atualizar_velocidade_aresta(Grafo g, const char* id_origem,
                                        const char* id_destino, double vm) {
+    struct grafo* gr = (struct grafo*)g;
     int origem = grafo_buscar_vertice(g, id_origem);
     int destino = grafo_buscar_vertice(g, id_destino);
     bool atualizou = false;
@@ -441,7 +472,7 @@ bool grafo_atualizar_velocidade_aresta(Grafo g, const char* id_origem,
         return false;
     }
 
-    for (Aresta* aresta = g->vertices[origem].adj; aresta != NULL; aresta = aresta->prox) {
+    for (Aresta* aresta = gr->vertices[origem].adj; aresta != NULL; aresta = aresta->prox) {
         if (aresta->destino == destino) {
             aresta->vm = vm;
             atualizou = true;
@@ -467,11 +498,12 @@ int grafo_atualizar_velocidade_regiao(Grafo g, double x, double y, double w, dou
     if (g == NULL || vm < 0.0) {
         return 0;
     }
+    struct grafo* gr = (struct grafo*)g;
 
-    for (int i = 0; i < g->num_arestas; i++) {
-        Aresta* aresta = g->arestas[i];
-        Vertice* origem = &g->vertices[aresta->origem];
-        Vertice* destino = &g->vertices[aresta->destino];
+    for (int i = 0; i < gr->num_arestas; i++) {
+        Aresta* aresta = gr->arestas[i];
+        Vertice* origem = &gr->vertices[aresta->origem];
+        Vertice* destino = &gr->vertices[aresta->destino];
 
         if (ponto_em_retangulo(origem->x, origem->y, x, y, w, h) &&
             ponto_em_retangulo(destino->x, destino->y, x, y, w, h)) {
@@ -505,6 +537,7 @@ int grafo_dijkstra(Grafo g, const char* id_origem, const char* id_destino,
     if (g == NULL || id_origem == NULL || id_destino == NULL) {
         return 0;
     }
+    struct grafo* gr = (struct grafo*)g;
 
     int origem = grafo_buscar_vertice(g, id_origem);
     int destino = grafo_buscar_vertice(g, id_destino);
@@ -513,7 +546,7 @@ int grafo_dijkstra(Grafo g, const char* id_origem, const char* id_destino,
         return 0;
     }
 
-    int n = g->num_vertices;
+    int n = gr->num_vertices;
     double* dist = (double*)malloc((size_t)n * sizeof(double));
     int* anterior = (int*)malloc((size_t)n * sizeof(int));
     bool* visitado = (bool*)calloc((size_t)n, sizeof(bool));
@@ -548,7 +581,7 @@ int grafo_dijkstra(Grafo g, const char* id_origem, const char* id_destino,
 
         visitado[atual] = true;
 
-        for (Aresta* aresta = g->vertices[atual].adj; aresta != NULL; aresta = aresta->prox) {
+        for (Aresta* aresta = gr->vertices[atual].adj; aresta != NULL; aresta = aresta->prox) {
             if (!aresta->habilitada) {
                 continue;
             }
@@ -595,7 +628,7 @@ int grafo_dijkstra(Grafo g, const char* id_origem, const char* id_destino,
 
         int posicao = tamanho_caminho - 1;
         for (int v = destino; v >= 0 && posicao >= 0; v = anterior[v]) {
-            caminho[posicao] = g->vertices[v].id;
+            caminho[posicao] = gr->vertices[v].id;
             if (v == origem) {
                 break;
             }
@@ -615,11 +648,14 @@ static bool aresta_valida_para_componentes(Aresta* aresta, double velocidade_min
 
 int grafo_componentes_fortemente_conexos(Grafo g, double velocidade_minima,
                                          int* componentes, int capacidade_componentes) {
-    if (g == NULL || componentes == NULL || capacidade_componentes < g->num_vertices) {
+    if (g == NULL) return -1;
+    struct grafo* gr = (struct grafo*)g;
+
+    if (componentes == NULL || capacidade_componentes < gr->num_vertices) {
         return -1;
     }
 
-    int n = g->num_vertices;
+    int n = gr->num_vertices;
     if (n == 0) {
         return 0;
     }
@@ -650,8 +686,8 @@ int grafo_componentes_fortemente_conexos(Grafo g, double velocidade_minima,
             topo--;
             int atual = pilha[topo];
 
-            for (int j = 0; j < g->num_arestas; j++) {
-                Aresta* aresta = g->arestas[j];
+            for (int j = 0; j < gr->num_arestas; j++) {
+                Aresta* aresta = gr->arestas[j];
                 int vizinho = -1;
 
                 if (!aresta_valida_para_componentes(aresta, velocidade_minima)) {
@@ -723,14 +759,17 @@ static bool conjunto_unir(int* pai, int* rank, int a, int b) {
 
 int grafo_arvore_geradora_minima_lentas(Grafo g, double velocidade_limite,
                                         int* indices_arestas, int capacidade_indices) {
-    if (g == NULL || g->num_vertices == 0) {
+    if (g == NULL) return 0;
+    struct grafo* gr = (struct grafo*)g;
+
+    if (gr->num_vertices == 0) {
         return 0;
     }
 
-    int capacidade_temp = max_int(g->num_arestas, 1);
+    int capacidade_temp = max_int(gr->num_arestas, 1);
     CandidatoAgm* candidatos = (CandidatoAgm*)malloc((size_t)capacidade_temp * sizeof(CandidatoAgm));
-    int* pai = (int*)malloc((size_t)g->num_vertices * sizeof(int));
-    int* rank = (int*)calloc((size_t)g->num_vertices, sizeof(int));
+    int* pai = (int*)malloc((size_t)gr->num_vertices * sizeof(int));
+    int* rank = (int*)calloc((size_t)gr->num_vertices, sizeof(int));
     int* lentas = (int*)malloc((size_t)capacidade_temp * sizeof(int));
 
     if (candidatos == NULL || pai == NULL || rank == NULL || lentas == NULL) {
@@ -742,8 +781,8 @@ int grafo_arvore_geradora_minima_lentas(Grafo g, double velocidade_limite,
     }
 
     int qtd_candidatos = 0;
-    for (int i = 0; i < g->num_arestas; i++) {
-        Aresta* aresta = g->arestas[i];
+    for (int i = 0; i < gr->num_arestas; i++) {
+        Aresta* aresta = gr->arestas[i];
 
         if (aresta->habilitada && aresta->origem != aresta->destino) {
             candidatos[qtd_candidatos].indice_aresta = i;
@@ -754,7 +793,7 @@ int grafo_arvore_geradora_minima_lentas(Grafo g, double velocidade_limite,
 
     qsort(candidatos, (size_t)qtd_candidatos, sizeof(CandidatoAgm), comparar_candidatos_agm);
 
-    for (int i = 0; i < g->num_vertices; i++) {
+    for (int i = 0; i < gr->num_vertices; i++) {
         pai[i] = i;
     }
 
@@ -762,7 +801,7 @@ int grafo_arvore_geradora_minima_lentas(Grafo g, double velocidade_limite,
     int qtd_agm = 0;
 
     for (int i = 0; i < qtd_candidatos; i++) {
-        Aresta* aresta = g->arestas[candidatos[i].indice_aresta];
+        Aresta* aresta = gr->arestas[candidatos[i].indice_aresta];
 
         if (conjunto_unir(pai, rank, aresta->origem, aresta->destino)) {
             qtd_agm++;
@@ -772,7 +811,7 @@ int grafo_arvore_geradora_minima_lentas(Grafo g, double velocidade_limite,
                 qtd_lentas++;
             }
 
-            if (qtd_agm == g->num_vertices - 1) {
+            if (qtd_agm == gr->num_vertices - 1) {
                 break;
             }
         }
@@ -798,12 +837,13 @@ int grafo_aumentar_velocidade_arestas(Grafo g, const int* indices_arestas,
     if (g == NULL || indices_arestas == NULL || quantidade <= 0 || fator <= 0.0) {
         return 0;
     }
+    struct grafo* gr = (struct grafo*)g;
 
     for (int i = 0; i < quantidade; i++) {
         int indice = indices_arestas[i];
 
-        if (indice >= 0 && indice < g->num_arestas) {
-            g->arestas[indice]->vm *= fator;
+        if (indice >= 0 && indice < gr->num_arestas) {
+            gr->arestas[indice]->vm *= fator;
             atualizadas++;
         }
     }
