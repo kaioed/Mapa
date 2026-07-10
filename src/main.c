@@ -153,6 +153,8 @@ int main(int argc, char** argv) {
     char caminho_qry[CAMINHO_MAX];
     char caminho_via[CAMINHO_MAX];
     char nome_base[CAMINHO_MAX];
+    char nome_base_geo[CAMINHO_MAX];
+    char nome_base_qry[CAMINHO_MAX];
     char caminho_svg[CAMINHO_MAX];
     char caminho_txt[CAMINHO_MAX];
     char caminho_hash[CAMINHO_MAX];
@@ -166,11 +168,29 @@ int main(int argc, char** argv) {
 
     if (!criar_diretorio_saida(dir_saida) ||
         !juntar_caminho(dir_entrada, arquivo_geo, caminho_geo, sizeof(caminho_geo)) ||
-        !obter_nome_base_sem_extensao(arquivo_geo, nome_base, sizeof(nome_base)) ||
-        !montar_saida(dir_saida, nome_base, ".svg", caminho_svg, sizeof(caminho_svg)) ||
+        !obter_nome_base_sem_extensao(arquivo_geo, nome_base_geo, sizeof(nome_base_geo))) {
+        fprintf(stderr, "Erro ao montar caminhos de entrada ou saida.\n");
+        return 1;
+    }
+
+    if (arquivo_qry != NULL) {
+        if (!juntar_caminho(dir_entrada, arquivo_qry, caminho_qry, sizeof(caminho_qry)) ||
+            !obter_nome_base_sem_extensao(arquivo_qry, nome_base_qry, sizeof(nome_base_qry))) {
+            fprintf(stderr, "Erro ao montar caminhos de entrada ou saida.\n");
+            return 1;
+        }
+    }
+
+    if (arquivo_qry != NULL) {
+        snprintf(nome_base, sizeof(nome_base), "%s_%s", nome_base_geo, nome_base_qry);
+    } else {
+        snprintf(nome_base, sizeof(nome_base), "%s", nome_base_geo);
+    }
+
+    if (!montar_saida(dir_saida, nome_base, ".svg", caminho_svg, sizeof(caminho_svg)) ||
         !montar_saida(dir_saida, nome_base, ".txt", caminho_txt, sizeof(caminho_txt)) ||
         !montar_saida(dir_saida, nome_base, ".hash.tmp", caminho_hash, sizeof(caminho_hash))) {
-        fprintf(stderr, "Erro ao montar caminhos de entrada ou saida.\n");
+        fprintf(stderr, "Erro ao montar caminhos de saida.\n");
         return 1;
     }
 
